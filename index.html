@@ -6,7 +6,7 @@
     <title>عشق ما - علی ♥ اسما</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* CSS بهبود یافته برای تطبیق با طراحی */
+        /* استایل‌های پایه و بهبود یافته */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -90,18 +90,54 @@
             gap: 10px;
             margin-top: 10px;
         }
+        /* دکمه‌های جالب از CodePen */
         .button {
-            background: white;
-            color: #ff69b4;
-            border: none;
-            border-radius: 20px;
+            position: relative;
+            display: inline-block;
             padding: 10px 20px;
+            color: #fff;
+            font-size: 16px;
+            text-decoration: none;
+            text-transform: uppercase;
+            overflow: hidden;
+            transition: .5s;
+            margin-top: 10px;
+            letter-spacing: 4px;
+            border: none;
             cursor: pointer;
-            font-size: 1em;
+            border-radius: 5px;
+        }
+        .button:hover {
+            background: #03e9f4;
+            color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 5px #03e9f4,
+                        0 0 25px #03e9f4,
+                        0 0 50px #03e9f4,
+                        0 0 100px #03e9f4;
+        }
+        .button span {
+            position: absolute;
+            display: block;
+        }
+        .button span:nth-child(1) {
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #03e9f4);
+            animation: btn-anim1 1s linear infinite;
+        }
+        @keyframes btn-anim1 {
+            0% {
+                left: -100%;
+            }
+            50%,100% {
+                left: 100%;
+            }
         }
         .button.primary {
-            background: #a020f0;
-            color: white;
+            background: #ff69b4;
         }
         .gallery-card {
             background: linear-gradient(135deg, #d7a1f9, #e0bbff);
@@ -128,47 +164,59 @@
             align-items: center;
             font-size: 3em;
             color: #fff;
+            cursor: pointer;
         }
+        /* Timeline برای خاطرات از CodePen */
         .memories-section {
             text-align: center;
             padding: 20px;
             position: relative;
         }
-        .timeline-line {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #ff69b4;
-            transform: translateX(-50%);
-        }
-        .memory-bubble {
-            background: white;
-            border-radius: 20px;
-            padding: 15px;
-            margin: 20px auto;
-            max-width: 80%;
-            text-align: right;
+        .timeline {
             position: relative;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .timeline__block {
+            position: relative;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .timeline__midpoint {
+            width: 20px;
+            height: 20px;
+            background: #ff69b4;
+            border-radius: 50%;
+            position: relative;
+            margin: 10px 0;
+        }
+        .timeline__content {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px;
+            width: 80%;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        body.dark-mode .memory-bubble {
+        body.dark-mode .timeline__content {
             background: #333;
         }
-        .memory-title {
+        .timeline__year {
             font-weight: bold;
         }
         .add-memory-btn {
-            background: linear-gradient(135deg, #ba55d3, #9370db);
+            background: #ba55d3;
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 20px;
             padding: 10px 20px;
             cursor: pointer;
             margin: 20px auto;
             display: block;
         }
+        /* پخش‌کننده موسیقی از CodePen - سفارشی */
         .music-player {
             background: linear-gradient(135deg, #ff69b4, #ff1493);
             border-radius: 20px 20px 0 0;
@@ -179,34 +227,123 @@
             text-align: center;
             color: white;
             box-shadow: 0 -4px 8px rgba(0,0,0,0.1);
+            z-index: 10;
         }
-        .music-title {
-            font-size: 1.5em;
-            margin-bottom: 10px;
+        @media (max-width: 768px) {
+            .music-player {
+                padding: 10px;
+            }
         }
-        .player-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-        }
-        .play-btn {
-            background: white;
-            color: #ff69b4;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
+        .audio-player {
             height: 50px;
-            font-size: 1.5em;
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto;
+            background: #444;
+            box-shadow: 0 0 20px 0 #000a;
+            font-family: arial;
+            color: white;
+            font-size: 0.75em;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: 6px auto;
+        }
+        .timeline {
+            background: white;
+            width: 100%;
+            position: relative;
+            cursor: pointer;
+            box-shadow: 0 2px 10px 0 #0008;
+        }
+        .progress {
+            background: coral;
+            width: 0%;
+            height: 100%;
+            transition: 0.25s;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            padding: 0 20px;
+        }
+        .toggle-play.play {
+            cursor: pointer;
+            position: relative;
+            left: 0;
+            height: 0;
+            width: 0;
+            border: 7px solid #0000;
+            border-left: 13px solid white;
+        }
+        .toggle-play.play:hover {
+            transform: scale(1.1);
+        }
+        .toggle-play.pause {
+            height: 15px;
+            width: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+        .toggle-play.pause:before {
+            position: absolute;
+            top: 0;
+            left: 0px;
+            background: white;
+            content: "";
+            height: 15px;
+            width: 3px;
+        }
+        .toggle-play.pause:after {
+            position: absolute;
+            top: 0;
+            right: 8px;
+            background: white;
+            content: "";
+            height: 15px;
+            width: 3px;
+        }
+        .toggle-play.pause:hover {
+            transform: scale(1.1);
+        }
+        .time {
+            display: flex;
+        }
+        .time > * {
+            padding: 2px;
+        }
+        .volume-container {
             cursor: pointer;
         }
-        .progress-bar {
-            background: rgba(255,255,255,0.3);
-            border-radius: 10px;
-            height: 5px;
-            width: 200px;
-            margin: 10px auto;
+        .volume-button {
+            height: 26px;
+            display: flex;
+            align-items: center;
         }
+        .volume {
+            transform: scale(0.7);
+        }
+        .volume-slider {
+            position: absolute;
+            left: -3px;
+            top: 15px;
+            z-index: -1;
+            width: 0;
+            height: 15px;
+            background: white;
+            box-shadow: 0 0 20px #000a;
+            transition: .25s;
+        }
+        .volume-percentage {
+            background: coral;
+            height: 100%;
+            width: 75%;
+        }
+        .volume-container:hover .volume-slider {
+            left: -123px;
+            width: 120px;
+        }
+        /* قلب انیمیشن از CodePen */
         .hearts {
             position: absolute;
             top: 0;
@@ -218,34 +355,37 @@
         }
         .heart {
             position: absolute;
-            font-size: 20px;
-            color: #ff69b4;
-            animation: float 8s ease-in-out infinite;
+            width: 30px;
+            height: 27px;
+            animation: heartbeat 1s infinite alternate, float 8s ease-in-out infinite;
+        }
+        .heart:before,
+        .heart:after {
+            position: absolute;
+            content: "";
+            left: 15px;
+            top: 0;
+            width: 15px;
+            height: 24px;
+            background: #ff69b4;
+            border-radius: 15px 15px 0 0;
+            transform: rotate(-45deg);
+            transform-origin: 0 100%;
+        }
+        .heart:after {
+            left: 0;
+            transform: rotate(45deg);
+            transform-origin: 100% 100%;
+        }
+        @keyframes heartbeat {
+            0% { transform: scale(0.8); }
+            100% { transform: scale(1); }
         }
         @keyframes float {
             0% { transform: translateY(0) rotate(0deg); opacity: 0.8; }
             100% { transform: translateY(-150vh) rotate(360deg); opacity: 0; }
         }
-        #mode-toggle {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: transparent;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-        }
-        /* سایر استایل‌ها از کد قبلی */
-        section#upload-section, section#gallery-section {
-            max-width: 90%;
-            margin: 20px auto;
-            background: none;
-            box-shadow: none;
-        }
-        #upload-form {
-            background: none;
-            padding: 0;
-        }
+        /* سایر استایل‌ها */
         #gallery {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -272,6 +412,26 @@
         #gallery-lock input {
             width: 200px;
             margin-bottom: 10px;
+        }
+        #mode-toggle {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: transparent;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .timer-boxes {
+                gap: 5px;
+            }
+            .timer-box {
+                min-width: 40px;
+            }
+            .buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -302,52 +462,62 @@
 
     <div class="gallery-card">
         <div class="gallery-title">گالری تصاویر ما</div>
-        <div class="gallery-placeholder"><i class="fa-solid fa-camera"></i></div>
+        <div class="gallery-placeholder" onclick="document.getElementById('file-input').click();"><i class="fa-solid fa-camera"></i></div>
     </div>
 
-    <section id="upload-section">
-        <form id="upload-form">
-            <input type="file" id="file-input" accept="image/*,video/*,audio/*,text/plain" multiple style="display: none;">
-            <button type="button" id="upload-btn" style="display: none;"></button>
-        </form>
-    </section>
+    <input type="file" id="file-input" accept="image/*,video/*,text/plain" multiple style="display: none;">
 
-    <section id="gallery-section">
-        <button id="view-gallery-btn" class="button">مشاهده گالری</button>
+    <div id="gallery-section">
+        <button class="button" id="view-gallery-btn">مشاهده گالری</button>
         <div id="gallery"></div>
-    </section>
+    </div>
 
-    <div class="memories-section">
-        <div class="timeline-line"></div>
-        <div class="memory-bubble">
-            <div class="memory-title">اولین بوسه</div>
-            <p>اون لحظه که لباتو رو گونه ام گذاشتی، دنیا برام متوقف شد. اولین بوسه مون چه زیبا بود!</p>
-            <small>1F/6/1D</small>
-        </div>
-        <button class="add-memory-btn">افزودن خاطره جدید</button>
+    <div class="memories-section" id="memories-timeline">
+        <h2>خاطرات ما</h2>
+        <div class="timeline"></div>
+        <button class="button add-memory-btn">افزودن خاطره جدید</button>
     </div>
 
     <div class="music-player">
         <div class="music-title">پخش موسیقی عاشقانه ♫</div>
-        <div>03:45 آهنگ عاشقانه - خواننده</div>
-        <div class="player-controls">
-            <button class="play-btn"><i class="fa-solid fa-play"></i></button>
+        <div class="audio-player">
+            <div class="timeline">
+                <div class="progress"></div>
+            </div>
+            <div class="controls">
+                <div class="play-container">
+                    <div class="toggle-play play"></div>
+                </div>
+                <div class="time">
+                    <div class="current">0:00</div>
+                    <div class="divider">/</div>
+                    <div class="length">0:00</div>
+                </div>
+                <div class="name">آهنگ عاشقانه</div>
+                <div class="volume-container">
+                    <div class="volume-button">
+                        <div class="volume icono-volumeMedium"></div>
+                    </div>
+                    <div class="volume-slider">
+                        <div class="volume-percentage"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="progress-bar"></div>
-        <small>یا دل مهربان تو برای موسیقی در حال اجراست و ...</small>
+        <button class="button" id="add-music-btn">افزودن آهنگ</button>
+        <input type="file" id="music-input" accept="audio/*" style="display: none;">
+        <div id="music-list"></div>
     </div>
 
     <div id="gallery-lock">
         <h2><i class="fa-solid fa-lock"></i> رمز عبور برای گالری</h2>
         <input type="password" id="password-input" placeholder="رمز عبور">
-        <button id="unlock-btn"><i class="fa-solid fa-unlock"></i> باز کردن</button>
+        <button class="button" id="unlock-btn">باز کردن</button>
     </div>
 
     <button id="mode-toggle">🌙</button>
 
-    <audio id="bg-music" loop>
-        <source src="https://example.com/romantic-music.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="bg-music"></audio>
 
     <script>
         // حالت روز و شب
@@ -367,7 +537,6 @@
         function createHeart() {
             const heart = document.createElement('div');
             heart.className = 'heart';
-            heart.innerHTML = '💕';
             heart.style.left = Math.random() * 100 + 'vw';
             heart.style.animationDuration = Math.random() * 5 + 5 + 's';
             document.querySelector('.hearts').appendChild(heart);
@@ -400,10 +569,10 @@
         setInterval(updateTimer, 1000);
         updateTimer();
 
-        // تغییر متن عاشقانه (می‌توانید ثابت نگه دارید یا تغییر دهید)
+        // متن عاشقانه
         const quotes = [
             '"عشق یعنی اینکه دو نفر با هم باشن که یه دنیای قشنگو بسازن - خالد حسینی"',
-            // اضافه کنید
+            // بیشتر اضافه کنید
         ];
         let quoteIndex = 0;
         function updateQuote() {
@@ -413,33 +582,21 @@
         setInterval(updateQuote, 10000);
         updateQuote();
 
-        // بارگذاری و گالری
-        const uploadBtn = document.getElementById('upload-btn');
+        // گالری
         const fileInput = document.getElementById('file-input');
-        const textInput = document.getElementById('text-input'); // اگر متن اضافه کنید
         let galleryItems = JSON.parse(localStorage.getItem('gallery')) || [];
-
-        // برای آپلود، کلیک روی placeholder گالری
-        document.querySelector('.gallery-placeholder').addEventListener('click', () => fileInput.click());
-
         fileInput.addEventListener('change', () => {
             Array.from(fileInput.files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = e => {
                     galleryItems.push({ type: file.type.split('/')[0], content: e.target.result });
-                    saveGallery();
+                    localStorage.setItem('gallery', JSON.stringify(galleryItems));
                     alert('بارگذاری شد!');
                 };
                 reader.readAsDataURL(file);
             });
-            fileInput.value = '';
         });
 
-        function saveGallery() {
-            localStorage.setItem('gallery', JSON.stringify(galleryItems));
-        }
-
-        // گالری با قفل
         const password = 'love';
         const viewGalleryBtn = document.getElementById('view-gallery-btn');
         const galleryLock = document.getElementById('gallery-lock');
@@ -470,14 +627,23 @@
                     const img = document.createElement('img');
                     img.src = item.content;
                     div.appendChild(img);
-                } // اضافه برای ویدیو و غیره
+                } else if (item.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.content;
+                    video.controls = true;
+                    div.appendChild(video);
+                } else if (item.type === 'text') {
+                    const p = document.createElement('p');
+                    p.textContent = item.content;
+                    div.appendChild(p);
+                }
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.className = 'button';
+                deleteBtn.textContent = 'حذف';
                 deleteBtn.addEventListener('click', () => {
                     if (confirm('حذف؟')) {
                         galleryItems.splice(index, 1);
-                        saveGallery();
+                        localStorage.setItem('gallery', JSON.stringify(galleryItems));
                         renderGallery();
                     }
                 });
@@ -486,35 +652,140 @@
             });
         }
 
-        // موسیقی
-        const bgMusic = document.getElementById('bg-music');
-        const playBtn = document.querySelector('.play-btn');
-        playBtn.addEventListener('click', () => {
-            if (bgMusic.paused) {
-                bgMusic.play();
-                playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            } else {
-                bgMusic.pause();
-                playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-            }
-        });
-
-        // افزودن خاطره (مثال ساده)
+        // خاطرات با timeline
+        let memories = JSON.parse(localStorage.getItem('memories')) || [];
+        const timeline = document.querySelector('.timeline');
         const addMemoryBtn = document.querySelector('.add-memory-btn');
         addMemoryBtn.addEventListener('click', () => {
             const title = prompt('عنوان خاطره:');
             const content = prompt('توضیحات:');
             if (title && content) {
-                const bubble = document.createElement('div');
-                bubble.className = 'memory-bubble';
-                bubble.innerHTML = `<div class="memory-title">${title}</div><p>${content}</p><small>${new Date().toLocaleDateString('fa-IR')}</small>`;
-                addMemoryBtn.before(bubble);
+                memories.push({ title, content, date: new Date().toLocaleDateString('fa-IR') });
+                localStorage.setItem('memories', JSON.stringify(memories));
+                renderMemories();
             }
         });
 
-        // دکمه‌های تقویم و نمایش (مثال)
+        function renderMemories() {
+            timeline.innerHTML = '';
+            memories.forEach((memory, index) => {
+                const block = document.createElement('div');
+                block.className = 'timeline__block';
+                block.innerHTML = `
+                    <div class="timeline__midpoint"></div>
+                    <div class="timeline__content">
+                        <h3 class="timeline__year">${memory.date}</h3>
+                        <p>${memory.title}: ${memory.content}</p>
+                        <button class="button delete-memory">حذف</button>
+                    </div>
+                `;
+                block.querySelector('.delete-memory').addEventListener('click', () => {
+                    if (confirm('حذف خاطره؟')) {
+                        memories.splice(index, 1);
+                        localStorage.setItem('memories', JSON.stringify(memories));
+                        renderMemories();
+                    }
+                });
+                timeline.appendChild(block);
+            });
+        }
+        renderMemories();
+
+        // موسیقی
+        let musicItems = JSON.parse(localStorage.getItem('music')) || [];
+        const audio = document.getElementById('bg-music');
+        const addMusicBtn = document.getElementById('add-music-btn');
+        const musicInput = document.getElementById('music-input');
+        const musicList = document.getElementById('music-list');
+        const playContainer = document.querySelector('.play-container');
+        const playBtn = document.querySelector('.toggle-play');
+        const currentTime = document.querySelector('.current');
+        const totalTime = document.querySelector('.length');
+        const progress = document.querySelector('.progress');
+        const volumeBtn = document.querySelector('.volume-button');
+        const volumeSlider = document.querySelector('.volume-percentage');
+
+        addMusicBtn.addEventListener('click', () => musicInput.click());
+        musicInput.addEventListener('change', () => {
+            const file = musicInput.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    musicItems.push({ name: file.name, src: e.target.result });
+                    localStorage.setItem('music', JSON.stringify(musicItems));
+                    renderMusicList();
+                    alert('آهنگ اضافه شد!');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function renderMusicList() {
+            musicList.innerHTML = '';
+            musicItems.forEach((music, index) => {
+                const div = document.createElement('div');
+                div.textContent = music.name;
+                div.style.cursor = 'pointer';
+                div.addEventListener('click', () => {
+                    audio.src = music.src;
+                    audio.play();
+                    document.querySelector('.name').textContent = music.name;
+                });
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'button';
+                deleteBtn.textContent = 'حذف';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm('حذف آهنگ؟')) {
+                        musicItems.splice(index, 1);
+                        localStorage.setItem('music', JSON.stringify(musicItems));
+                        renderMusicList();
+                    }
+                });
+                div.appendChild(deleteBtn);
+                musicList.appendChild(div);
+            });
+        }
+        renderMusicList();
+
+        // کنترل پخش‌کننده
+        playContainer.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playBtn.classList.remove('play');
+                playBtn.classList.add('pause');
+            } else {
+                audio.pause();
+                playBtn.classList.remove('pause');
+                playBtn.classList.add('play');
+            }
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            const percentage = (audio.currentTime / audio.duration) * 100;
+            progress.style.width = `${percentage}%`;
+            currentTime.textContent = formatTime(audio.currentTime);
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            totalTime.textContent = formatTime(audio.duration);
+        });
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        // ولوم
+        volumeSlider.parentElement.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+            volumeSlider.style.width = `${e.target.value}%`;
+        });
+
+        // دکمه‌های دیگر
         document.querySelector('.button.primary').addEventListener('click', () => alert('تقویم کامل رابطه نمایش داده می‌شود.'));
-        document.querySelector('.button:not(.primary)').addEventListener('click', () => alert('نمایش کامل رابطه.'));
+        document.querySelectorAll('.button')[1].addEventListener('click', () => alert('نمایش کامل رابطه.'));
     </script>
 </body>
 </html>
