@@ -4,32 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سایت عاشقانه - عشق ما</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* CSS برای گرافیک بالا، حالت روز و شب */
+        /* CSS بهبود یافته برای گرافیک بالا، با background پویا */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
             color: #333;
             transition: background 0.5s, color 0.5s;
             overflow-x: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://source.unsplash.com/random/1920x1080/?love,romantic') no-repeat center center/cover;
+            opacity: 0.2;
+            z-index: -1;
         }
         body.dark-mode {
-            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            background: linear-gradient(135deg, #1f1c2c 0%, #928dab 100%);
             color: #f1f1f1;
+        }
+        body.dark-mode::before {
+            opacity: 0.1;
         }
         header {
             text-align: center;
-            padding: 50px 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom: 3px solid rgba(255, 255, 255, 0.6);
             position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         header h1 {
-            font-size: 3em;
+            font-size: 3.5em;
             margin: 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.4);
         }
         .hearts {
             position: absolute;
@@ -42,92 +59,108 @@
         }
         .heart {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            background: red;
-            transform: rotate(45deg);
-            animation: float 5s linear infinite;
+            font-size: 24px;
+            color: #ff69b4;
+            animation: float 6s ease-in-out infinite;
         }
-        .heart:before, .heart:after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: red;
-            border-radius: 50%;
-        }
-        .heart:before { top: -10px; left: 0; }
-        .heart:after { left: -10px; top: 0; }
         @keyframes float {
-            0% { transform: translateY(0) rotate(45deg); opacity: 1; }
-            100% { transform: translateY(-100vh) rotate(45deg); opacity: 0; }
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
         }
         #counter {
-            font-size: 2em;
-            margin: 20px 0;
+            font-size: 2.2em;
+            margin: 25px 0;
+            font-weight: bold;
         }
         #love-quote {
             font-style: italic;
-            font-size: 1.5em;
-            margin: 20px;
+            font-size: 1.8em;
+            margin: 25px;
             text-align: center;
             animation: fadeInOut 10s infinite;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
         @keyframes fadeInOut {
-            0% { opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { opacity: 0; }
+            0% { opacity: 0; transform: scale(0.9); }
+            10% { opacity: 1; transform: scale(1); }
+            90% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.9); }
         }
         section {
-            padding: 20px;
-            max-width: 800px;
+            padding: 30px;
+            max-width: 900px;
             margin: 0 auto;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+        body.dark-mode section {
+            background: rgba(0, 0, 0, 0.6);
         }
         #upload-form {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 20px;
+            padding: 25px;
             border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        body.dark-mode #upload-form {
-            background: rgba(0, 0, 0, 0.5);
         }
         input, button {
-            margin: 10px 0;
-            padding: 10px;
+            margin: 12px 0;
+            padding: 12px;
             width: 100%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
         }
         button {
             background: #ff69b4;
             color: white;
             cursor: pointer;
+            transition: background 0.3s;
         }
         button:hover {
             background: #ff1493;
         }
         #gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
         }
         .gallery-item {
             position: relative;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        body.dark-mode .gallery-item {
+            background: #333;
         }
         .gallery-item img, .gallery-item video {
             width: 100%;
-            border-radius: 10px;
+            border-radius: 8px;
         }
         .gallery-item audio {
             width: 100%;
         }
         .gallery-item p {
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.6);
             color: white;
-            padding: 10px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
         }
         #gallery-lock {
             display: none;
@@ -136,97 +169,114 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             z-index: 1000;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
         #gallery-lock input {
-            width: 200px;
-            margin-bottom: 10px;
+            width: 250px;
+            margin-bottom: 15px;
         }
         #mode-toggle {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 25px;
+            right: 25px;
             background: #fff;
             border: none;
-            padding: 10px;
+            padding: 12px;
             cursor: pointer;
             border-radius: 50%;
+            font-size: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         body.dark-mode #mode-toggle {
-            background: #333;
+            background: #444;
             color: #fff;
         }
-        /* موسیقی پس‌زمینه */
-        #bg-music {
-            display: none;
+        /* ایکون‌های Font Awesome */
+        i {
+            margin-right: 8px;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>عشق ما 💕</h1>
+        <h1><i class="fa-solid fa-heart"></i> عشق ما <i class="fa-solid fa-heart"></i></h1>
         <div id="counter">زمان رابطه: محاسبه می‌شود...</div>
         <div id="love-quote">متن عاشقانه...</div>
         <div class="hearts"></div>
     </header>
 
     <section id="upload-section">
-        <h2>بارگذاری محتوا با پارتنر</h2>
+        <h2><i class="fa-solid fa-upload"></i> بارگذاری محتوا با پارتنر</h2>
         <form id="upload-form">
             <input type="file" id="file-input" accept="image/*,video/*,audio/*,text/plain" multiple>
             <input type="text" id="text-input" placeholder="متن عاشقانه بنویسید...">
-            <button type="button" id="upload-btn">بارگذاری</button>
+            <button type="button" id="upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> بارگذاری</button>
         </form>
     </section>
 
     <section id="gallery-section">
-        <h2>گالری (با قفل)</h2>
-        <button id="view-gallery-btn">مشاهده گالری</button>
+        <h2><i class="fa-solid fa-images"></i> گالری (با قفل)</h2>
+        <button id="view-gallery-btn"><i class="fa-solid fa-eye"></i> مشاهده گالری</button>
         <div id="gallery"></div>
     </section>
 
     <div id="gallery-lock">
-        <h2>رمز عبور برای گالری</h2>
+        <h2><i class="fa-solid fa-lock"></i> رمز عبور برای گالری</h2>
         <input type="password" id="password-input" placeholder="رمز عبور">
-        <button id="unlock-btn">باز کردن</button>
+        <button id="unlock-btn"><i class="fa-solid fa-unlock"></i> باز کردن</button>
     </div>
 
     <button id="mode-toggle">🌙</button>
 
     <audio id="bg-music" loop>
-        <source src="https://example.com/romantic-music.mp3" type="audio/mpeg"> <!-- جایگزین با لینک واقعی موسیقی عاشقانه -->
+        <source src="https://example.com/romantic-music.mp3" type="audio/mpeg"> <!-- جایگزین با لینک واقعی -->
     </audio>
 
     <script>
-        // JavaScript برای ویژگی‌ها
+        // JavaScript بهبود یافته
 
         // حالت روز و شب
         const body = document.body;
         const modeToggle = document.getElementById('mode-toggle');
-        let isDarkMode = false;
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        body.classList.toggle('dark-mode', isDarkMode);
+        modeToggle.textContent = isDarkMode ? '☀️' : '🌙';
         modeToggle.addEventListener('click', () => {
             isDarkMode = !isDarkMode;
             body.classList.toggle('dark-mode', isDarkMode);
             modeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDarkMode);
         });
 
-        // انیمیشن قلب‌ها برای گرافیک بالا
+        // انیمیشن قلب‌ها با Font Awesome
         function createHeart() {
             const heart = document.createElement('div');
             heart.className = 'heart';
+            heart.innerHTML = '<i class="fa-solid fa-heart"></i>';
             heart.style.left = Math.random() * 100 + 'vw';
-            heart.style.animationDuration = Math.random() * 3 + 2 + 's';
+            heart.style.animationDuration = Math.random() * 4 + 3 + 's';
+            heart.style.fontSize = Math.random() * 20 + 15 + 'px';
             document.querySelector('.hearts').appendChild(heart);
-            setTimeout(() => heart.remove(), 5000);
+            setTimeout(() => heart.remove(), 6000);
         }
-        setInterval(createHeart, 300);
+        setInterval(createHeart, 200);
 
-        // شمارشگر زمان رابطه
-        let relDate = new Date('2023-01-01'); // تاریخ شروع رابطه - می‌توانید تغییر دهید یا ورودی بگیرید
+        // شمارشگر زمان رابطه - ذخیره تاریخ در localStorage
+        let relDate = localStorage.getItem('relDate');
+        if (!relDate) {
+            relDate = prompt('تاریخ شروع رابطه را وارد کنید (YYYY-MM-DD):');
+            if (relDate) {
+                localStorage.setItem('relDate', relDate);
+            } else {
+                relDate = new Date('2023-01-01'); // پیش‌فرض
+            }
+        } else {
+            relDate = new Date(relDate);
+        }
         function updateCounter() {
             const now = new Date();
             const diff = now - relDate;
@@ -239,7 +289,7 @@
         setInterval(updateCounter, 1000);
         updateCounter();
 
-        // متن عاشقانه که هر 10 ثانیه تغییر می‌کند
+        // متن عاشقانه
         const quotes = [
             "عشق تو بهترین چیز زندگی‌مه 💖",
             "هر لحظه با تو بودن مثل رویاست 🌹",
@@ -247,7 +297,8 @@
             "دوستت دارم بیشتر از ستاره‌ها ⭐",
             "با تو، دنیا زیباتره 🌍",
             "عشق ما ابدیه ❤️",
-            "تو بهترین پارتنر دنیایی 😍"
+            "تو بهترین پارتنر دنیایی 😍",
+            "هر روز عاشق‌تر می‌شم ازت 🥰"
         ];
         let quoteIndex = 0;
         function updateQuote() {
@@ -257,14 +308,14 @@
         setInterval(updateQuote, 10000);
         updateQuote();
 
-        // بارگذاری محتوا و ذخیره در localStorage
+        // بارگذاری و ذخیره در localStorage
         const uploadBtn = document.getElementById('upload-btn');
         const fileInput = document.getElementById('file-input');
         const textInput = document.getElementById('text-input');
         let galleryItems = JSON.parse(localStorage.getItem('gallery')) || [];
 
         uploadBtn.addEventListener('click', () => {
-            const text = textInput.value;
+            const text = textInput.value.trim();
             if (text) {
                 galleryItems.push({ type: 'text', content: text });
             }
@@ -272,7 +323,7 @@
                 const reader = new FileReader();
                 reader.onload = e => {
                     galleryItems.push({ type: file.type.split('/')[0], content: e.target.result });
-                    localStorage.setItem('gallery', JSON.stringify(galleryItems));
+                    saveGallery();
                 };
                 reader.readAsDataURL(file);
             });
@@ -281,8 +332,12 @@
             alert('بارگذاری شد!');
         });
 
-        // گالری با قفل (رمز پیش‌فرض: love)
-        const password = 'love'; // رمز عبور - می‌توانید تغییر دهید
+        function saveGallery() {
+            localStorage.setItem('gallery', JSON.stringify(galleryItems));
+        }
+
+        // گالری با قفل
+        const password = 'love'; // تغییر دهید اگر بخواهید
         const viewGalleryBtn = document.getElementById('view-gallery-btn');
         const galleryLock = document.getElementById('gallery-lock');
         const passwordInput = document.getElementById('password-input');
@@ -305,7 +360,7 @@
 
         function renderGallery() {
             gallery.innerHTML = '';
-            galleryItems.forEach(item => {
+            galleryItems.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'gallery-item';
                 if (item.type === 'image') {
@@ -327,20 +382,27 @@
                     p.textContent = item.content;
                     div.appendChild(p);
                 }
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+                deleteBtn.addEventListener('click', () => {
+                    if (confirm('آیا مطمئن هستید می‌خواهید حذف کنید؟')) {
+                        galleryItems.splice(index, 1);
+                        saveGallery();
+                        renderGallery();
+                    }
+                });
+                div.appendChild(deleteBtn);
                 gallery.appendChild(div);
             });
         }
 
-        // موسیقی پس‌زمینه (اختیاری - پخش خودکار)
+        // موسیقی پس‌زمینه
         const bgMusic = document.getElementById('bg-music');
-        // bgMusic.play(); // اگر بخواهید خودکار پخش شود (برخی مرورگرها بلاک می‌کنند)
+        // bgMusic.play(); // اگر بخواهید
 
-        // ویژگی اضافی: ورودی برای تاریخ رابطه
-        const relDateInput = prompt('تاریخ شروع رابطه را وارد کنید (YYYY-MM-DD):');
-        if (relDateInput) relDate = new Date(relDateInput);
-
-        // ویژگی اضافی: چت ساده با پارتنر (mock - ذخیره در local)
-        // می‌توانید بخش چت اضافه کنید اگر بخواهید
+        // ویژگی اضافی: تغییر رمز عبور (اختیاری)
+        // می‌توانید اضافه کنید
     </script>
 </body>
 </html>
