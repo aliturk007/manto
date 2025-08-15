@@ -1,555 +1,346 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-
-// ⚠️ نکته: این یک دمو/نسخه‌ی تک‌فایل است که بدون بک‌اند کار می‌کند و
-// اطلاعات را در localStorage ذخیره می‌کند. برای استفاده‌ی واقعی (چند نفره و بین دستگاه‌ها)
-// پیشنهاد می‌شود بعداً آن را به یک سرویس بک‌اند مثل Supabase/Firebase متصل کنید.
-
-// ——————————————— ابزارهای کمکی ———————————————
-const STORAGE_KEYS = {
-  theme: "loveapp_theme",
-  startISO: "loveapp_start_iso",
-  quotes: "loveapp_quotes",
-  media: "loveapp_media", // {id, type: image|video|audio, dataURL, caption, createdAt}
-  pinHash: "loveapp_pin_hash",
-  bg: "loveapp_bg", // پس‌زمینه سفارشی (dataURL)
-};
-
-function sha256(str) {
-  // هش ساده (برای دمو) — امنیت جدی به حساب نیاورید
-  const buffer = new TextEncoder().encode(str);
-  return crypto.subtle.digest("SHA-256", buffer).then((hash) => {
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  });
-}
-
-function formatDuration(ms) {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const days = Math.floor(totalSeconds / (3600 * 24));
-  const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  return { days, hours, minutes, seconds };
-}
-
-function readLS(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-function writeLS(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-}
-
-// ——————————————— مؤلفه اصلی ———————————————
-export default function LoveApp() {
-  // حالت روز/شب
-  const [theme, setTheme] = useState(() => readLS(STORAGE_KEYS.theme, "dark"));
-  useEffect(() => {
-    writeLS(STORAGE_KEYS.theme, theme);
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
-
-  // تاریخ شروع رابطه
-  const [startISO, setStartISO] = useState(() => readLS(STORAGE_KEYS.startISO, ""));
-  useEffect(() => writeLS(STORAGE_KEYS.startISO, startISO), [startISO]);
-
-  // پس‌زمینه سفارشی
-  const [bg, setBg] = useState(() => readLS(STORAGE_KEYS.bg, ""));
-  useEffect(() => writeLS(STORAGE_KEYS.bg, bg), [bg]);
-
-  // متون عاشقانه
-  const defaultQuotes = [
-    "دوست داشتن تو زیباترین عادت من است ❤️",
-    "هر ثانیه کنارت، یک دنیا خاطره می‌شود.",
-    "تو آغاز و پایان تمام شعرهای منی.",
-    "جهان با تو شفاف‌تر است، مثل صبحِ جمعه.",
-  ];
-  const [quotes, setQuotes] = useState(() => readLS(STORAGE_KEYS.quotes, defaultQuotes));
-  useEffect(() => writeLS(STORAGE_KEYS.quotes, quotes), [quotes]);
-
-  // چرخش متن هر ۱۰ ثانیه
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setQuoteIndex((i) => (i + 1) % Math.max(1, quotes.length)), 10000);
-    return () => clearInterval(id);
-  }, [quotes.length]);
-
-  // شمارش‌گر از تاریخ شروع
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  const since = useMemo(() => {
-    if (!startISO) return null;
-    const start = new Date(startISO).getTime();
-    return formatDuration(now - start);
-  }, [now, startISO]);
-
-  // گالری با قفل
-  const [pinSet, setPinSet] = useState(() => !!readLS(STORAGE_KEYS.pinHash, null));
-  const [locked, setLocked] = useState(() => pinSet);
-  const [pinInput, setPinInput] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
-
-  async function setPin(pin) {
-    const hash = await sha256(pin);
-    writeLS(STORAGE_KEYS.pinHash, hash);
-    setPinSet(true);
-    setLocked(true);
-  }
-  async function verifyPin(pin) {
-    const stored = readLS(STORAGE_KEYS.pinHash, null);
-    const hash = await sha256(pin);
-    if (stored && hash === stored) {
-      setLocked(false);
-      setPinInput("");
-      return true;
-    }
-    return false;
-  }
-  function removePin() {
-    localStorage.removeItem(STORAGE_KEYS.pinHash);
-    setPinSet(false);
-    setLocked(false);
-  }
-
-  // رسانه‌ها
-  const [media, setMedia] = useState(() => readLS(STORAGE_KEYS.media, []));
-  useEffect(() => writeLS(STORAGE_KEYS.media, media), [media]);
-
-  async function handleUpload(files, caption = "") {
-    const arr = Array.from(files || []);
-    const items = [];
-    for (const file of arr) {
-      const type = file.type.startsWith("image")
-        ? "image"
-        : file.type.startsWith("video")
-        ? "video"
-        : file.type.startsWith("audio")
-        ? "audio"
-        : null;
-      if (!type) continue;
-      const dataURL = await readFileAsDataURL(file);
-      items.push({ id: crypto.randomUUID(), type, dataURL, caption, createdAt: Date.now() });
-    }
-    setMedia((m) => [...items, ...m].slice(0, 300)); // حداکثر ۳۰۰ مورد برای دمو
-  }
-
-  function deleteMedia(id) {
-    setMedia((m) => m.filter((x) => x.id !== id));
-  }
-
-  function clearAllMedia() {
-    if (confirm("همهٔ مدیا حذف شود؟")) setMedia([]);
-  }
-
-  function onBgUpload(file) {
-    if (!file) return;
-    readFileAsDataURL(file).then(setBg);
-  }
-
-  const quoteNow = quotes.length ? quotes[quoteIndex % quotes.length] : "متنی اضافه کنید…";
-
-  return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-slate-950 text-slate-100" : "bg-rose-50 text-slate-800"} transition-colors duration-300`}
-      style={bg ? { backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
-    >
-      <div className="backdrop-blur-sm min-h-screen">
-        <Header theme={theme} setTheme={setTheme} />
-
-        <main className="max-w-6xl mx-auto px-4 pb-24">
-          <Hero startISO={startISO} setStartISO={setStartISO} since={since} quote={quoteNow} />
-
-          <QuoteEditor quotes={quotes} setQuotes={setQuotes} />
-
-          <BackgroundPicker bg={bg} setBg={setBg} onBgUpload={onBgUpload} />
-
-          <GallerySection
-            media={media}
-            onUpload={handleUpload}
-            onDelete={deleteMedia}
-            onClearAll={clearAllMedia}
-            locked={locked}
-            pinSet={pinSet}
-            setPin={setPin}
-            verifyPin={verifyPin}
-            removePin={removePin}
-            pinInput={pinInput}
-            setPinInput={setPinInput}
-            pinConfirm={pinConfirm}
-            setPinConfirm={setPinConfirm}
-          />
-
-          <Footer />
-        </main>
-      </div>
-
-      {/* افکت قلب‌ها */}
-      <HeartsAnimation />
-    </div>
-  );
-}
-
-// ——————————————— بخش‌ها ———————————————
-function Header({ theme, setTheme }) {
-  return (
-    <header className="sticky top-0 z-30 bg-transparent/60 backdrop-blur border-b border-white/10">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">💞</span>
-          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">LoveSpace</h1>
-          <span className="hidden sm:inline text-sm opacity-70">— فضای عاشقانهٔ دونفره</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="px-3 py-1.5 rounded-2xl shadow bg-white/10 hover:bg-white/20 dark:bg-black/20 dark:hover:bg-black/30"
-            title="حالت روز/شب"
-          >
-            {theme === "dark" ? "☀️ روز" : "🌙 شب"}
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function Hero({ startISO, setStartISO, since, quote }) {
-  return (
-    <section className="py-10 sm:py-16">
-      <div className="grid md:grid-cols-2 gap-6 items-center">
-        <div className="p-5 rounded-3xl bg-white/40 dark:bg-black/30 shadow-lg border border-white/20">
-          <h2 className="text-2xl font-bold mb-3">⏳ شمارشِ عشق</h2>
-          <div className="space-y-3">
-            <label className="block text-sm opacity-80">تاریخ و ساعت شروع رابطه</label>
-            <input
-              type="datetime-local"
-              value={startISO}
-              onChange={(e) => setStartISO(e.target.value)}
-              className="w-full rounded-xl px-3 py-2 bg-white/70 dark:bg-white/10 border border-white/30 outline-none"
-            />
-            {since ? (
-              <div className="text-center text-3xl sm:text-4xl font-black tracking-wider py-4">
-                <span className="inline-block min-w-[4ch]">{since.days}</span>
-                <span className="text-base align-super">روز</span>
-                <span className="mx-2">•</span>
-                <span className="inline-block min-w-[2ch]">{since.hours.toString().padStart(2, "0")}</span>
-                <span className="text-base align-super">ساعت</span>
-                <span className="mx-2">•</span>
-                <span className="inline-block min-w-[2ch]">{since.minutes.toString().padStart(2, "0")}</span>
-                <span className="text-base align-super">دقیقه</span>
-                <span className="mx-2">•</span>
-                <span className="inline-block min-w-[2ch]">{since.seconds.toString().padStart(2, "0")}</span>
-                <span className="text-base align-super">ثانیه</span>
-              </div>
-            ) : (
-              <p className="text-sm opacity-75">یک تاریخ انتخاب کنید تا شمارش شروع شود.</p>
-            )}
-          </div>
-        </div>
-        <div className="p-5 rounded-3xl bg-gradient-to-br from-rose-200/60 to-pink-200/50 dark:from-fuchsia-900/30 dark:to-rose-900/20 shadow-lg border border-white/20 text-center">
-          <div className="text-5xl">❤️</div>
-          <p className="mt-4 text-xl sm:text-2xl font-semibold leading-relaxed">
-            {quote}
-          </p>
-          <p className="mt-2 text-xs opacity-70">(هر ۱۰ ثانیه متن عوض می‌شود)</p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function QuoteEditor({ quotes, setQuotes }) {
-  const [newQuote, setNewQuote] = useState("");
-  function addQuote() {
-    const t = newQuote.trim();
-    if (!t) return;
-    setQuotes((q) => [t, ...q]);
-    setNewQuote("");
-  }
-  function removeQuote(i) {
-    setQuotes((q) => q.filter((_, idx) => idx !== i));
-  }
-  return (
-    <section className="py-8">
-      <div className="p-5 rounded-3xl bg-white/40 dark:bg-black/30 shadow border border-white/20">
-        <h3 className="text-xl font-bold mb-3">📝 متن‌های عاشقانه</h3>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            value={newQuote}
-            onChange={(e) => setNewQuote(e.target.value)}
-            placeholder="یه جملهٔ عاشقانه بنویس…"
-            className="flex-1 rounded-xl px-3 py-2 bg-white/70 dark:bg-white/10 border border-white/30 outline-none"
-          />
-          <button onClick={addQuote} className="px-4 py-2 rounded-xl bg-rose-500 text-white shadow hover:scale-[1.02] active:scale-95 transition">
-            افزودن
-          </button>
-        </div>
-        {quotes.length ? (
-          <ul className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {quotes.map((q, i) => (
-              <li key={i} className="p-3 rounded-xl bg-white/60 dark:bg-white/10 border border-white/20 flex items-start justify-between gap-2">
-                <span className="text-sm leading-6">{q}</span>
-                <button onClick={() => removeQuote(i)} className="text-xs px-2 py-1 rounded-lg bg-black/10 dark:bg-white/10">حذف</button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm opacity-70">فعلاً متنی وجود ندارد.</p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function BackgroundPicker({ bg, setBg, onBgUpload }) {
-  return (
-    <section className="py-4">
-      <div className="p-5 rounded-3xl bg-white/40 dark:bg-black/30 shadow border border-white/20">
-        <h3 className="text-xl font-bold mb-3">🖼️ پس‌زمینهٔ شخصی</h3>
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="px-4 py-2 rounded-xl bg-white/70 dark:bg-white/10 border border-white/30 cursor-pointer">
-            انتخاب تصویر
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => onBgUpload(e.target.files?.[0] || null)} />
-          </label>
-          {bg && (
-            <button onClick={() => setBg("")} className="px-3 py-2 rounded-xl bg-black/10 dark:bg-white/10">
-              حذف پس‌زمینه
-            </button>
-          )}
-          <span className="text-xs opacity-70">(تصویر شما فقط روی همین دستگاه ذخیره می‌شود)</span>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function GallerySection(props) {
-  const {
-    media,
-    onUpload,
-    onDelete,
-    onClearAll,
-    locked,
-    pinSet,
-    setPin,
-    verifyPin,
-    removePin,
-    pinInput,
-    setPinInput,
-    pinConfirm,
-    setPinConfirm,
-  } = props;
-
-  const fileRef = useRef(null);
-  const [caption, setCaption] = useState("");
-
-  async function handleVerify() {
-    const ok = await verifyPin(pinInput);
-    if (!ok) alert("رمز اشتباه است ✋");
-  }
-  async function handleSetPin() {
-    if (!pinInput || pinInput !== pinConfirm) {
-      alert("لطفاً رمز و تکرار آن را یکسان وارد کنید.");
-      return;
-    }
-    await setPin(pinInput);
-    setPinConfirm("");
-    alert("قفل فعال شد. برای ورود، رمز را بزنید.");
-  }
-
-  return (
-    <section className="py-10">
-      <div className="p-5 rounded-3xl bg-white/50 dark:bg-black/30 shadow border border-white/20">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-xl font-bold">🗂️ گالری دونفره</h3>
-          <div className="flex items-center gap-2 text-xs opacity-70">
-            <span>قفل گالری: {pinSet ? (locked ? "🔒 بسته" : "🔓 باز") : "⛔ غیرفعال"}</span>
-          </div>
-        </div>
-
-        {/* کنترل قفل */}
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
-          <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/10 border border-white/20">
-            {pinSet ? (
-              locked ? (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-2">
-                  <div className="flex-1">
-                    <label className="block text-xs opacity-80 mb-1">رمز ورود</label>
-                    <input
-                      type="password"
-                      value={pinInput}
-                      onChange={(e) => setPinInput(e.target.value)}
-                      className="w-full rounded-xl px-3 py-2 bg-white/70 dark:bg-white/10 border border-white/30 outline-none"
-                    />
-                  </div>
-                  <button onClick={handleVerify} className="px-4 py-2 rounded-xl bg-emerald-500 text-white">باز کردن</button>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <button onClick={() => (fileRef.current as any)?.click()} className="px-4 py-2 rounded-xl bg-rose-500 text-white">بارگذاری عکس/فیلم/موزیک</button>
-                  <input ref={fileRef} type="file" className="hidden" multiple accept="image/*,video/*,audio/*"
-                    onChange={(e) => onUpload(e.target.files, caption)} />
-                  <input
-                    placeholder="زیرنویس (اختیاری)"
-                    value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
-                    className="rounded-xl px-3 py-2 bg-white/70 dark:bg-white/10 border border-white/30 outline-none"
-                  />
-                  <button onClick={onClearAll} className="px-3 py-2 rounded-xl bg-black/10 dark:bg-white/10">حذف همه</button>
-                  <button onClick={removePin} className="px-3 py-2 rounded-xl bg-black/10 dark:bg-white/10">حذف قفل</button>
-                </div>
-              )
-            ) : (
-              <div className="grid sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs opacity-80 mb-1">رمز دلخواه</label>
-                  <input
-                    type="password"
-                    value={pinInput}
-                    onChange={(e) => setPinInput(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 bg-white/70 dark:bg-white/10 border border-white/30 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs opacity-80 mb-1">تکرار رمز</label>
-                  <input
-                    type="password"
-                    value={pinConfirm}
-                    onChange={(e) => setPinConfirm(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2 bg-white/70 dark:bg-white/10 border border-white/30 outline-none"
-                  />
-                </div>
-                <button onClick={handleSetPin} className="sm:col-span-2 px-4 py-2 rounded-xl bg-violet-600 text-white">ایجاد قفل</button>
-                <p className="sm:col-span-2 text-xs opacity-70">(برای امنیت واقعی حتماً بعداً بک‌اند اضافه کنید)</p>
-              </div>
-            )}
-          </div>
-
-          <div className="p-4 rounded-2xl bg-white/60 dark:bg-white/10 border border-white/20">
-            <p className="text-sm opacity-80 mb-2">راهنما</p>
-            <ul className="list-disc pr-5 text-sm space-y-1 opacity-80">
-              <li>فایل‌ها فقط روی همین مرورگر ذخیره می‌شوند.</li>
-              <li>برای اشتراک‌گذاری بین شما و پارتنر: بعداً همگام‌سازی ابری اضافه کنید.</li>
-              <li>از دکمهٔ «پس‌زمینهٔ شخصی» برای گذاشتن عکس دونفره استفاده کنید.</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* شبکهٔ گالری */}
-        {(!pinSet || !locked) && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {media.length === 0 && (
-              <div className="col-span-full text-center opacity-70 text-sm">هنوز چیزی بارگذاری نکردید.</div>
-            )}
-            {media.map((m) => (
-              <figure key={m.id} className="relative group rounded-2xl overflow-hidden border border-white/20 bg-white/60 dark:bg-white/10">
-                {m.type === "image" && (
-                  <img src={m.dataURL} alt={m.caption || "photo"} className="w-full h-64 object-cover" />
-                )}
-                {m.type === "video" && (
-                  <video controls className="w-full h-64 object-cover">
-                    <source src={m.dataURL} />
-                  </video>
-                )}
-                {m.type === "audio" && (
-                  <div className="h-64 flex items-center justify-center">
-                    <audio controls src={m.dataURL} className="w-full px-4" />
-                  </div>
-                )}
-                {m.caption && (
-                  <figcaption className="absolute bottom-0 left-0 right-0 p-2 text-xs bg-black/40 text-white backdrop-blur">
-                    {m.caption}
-                  </figcaption>
-                )}
-                <button onClick={() => onDelete(m.id)} className="absolute top-2 left-2 text-xs px-2 py-1 rounded-lg bg-black/50 text-white opacity-0 group-hover:opacity-100 transition">
-                  حذف
-                </button>
-              </figure>
-            ))}
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="mt-8 text-center opacity-70 text-xs">
-      ساخته‌شده با ❤️ — از این دمو استفاده کنید و هرچه دوست دارید اضافه کنید.
-    </footer>
-  );
-}
-
-// ——————————————— افکت قلب‌های شناور ———————————————
-function HeartsAnimation() {
-  const [hearts, setHearts] = useState(() => new Array(12).fill(0).map(() => mkHeart()));
-  useEffect(() => {
-    const id = setInterval(() => {
-      setHearts((hs) => {
-        const copy = [...hs];
-        copy[Math.floor(Math.random() * copy.length)] = mkHeart();
-        return copy;
-      });
-    }, 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
-      {hearts.map((h) => (
-        <span
-          key={h.id}
-          className="absolute select-none"
-          style={{
-            left: h.left,
-            animation: `floatUp ${h.duration}ms linear infinite`,
-            bottom: h.bottom,
-            fontSize: h.size,
-            filter: "drop-shadow(0 2px 6px rgba(0,0,0,.2))",
-          }}
-        >
-          {h.char}
-        </span>
-      ))}
-      <style>{`
-        @keyframes floatUp {
-          0% { transform: translateY(0) rotate(0deg); opacity: .0 }
-          10%{ opacity: .9 }
-          100% { transform: translateY(-120vh) rotate(360deg); opacity: 0 }
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سایت عاشقانه - عشق ما</title>
+    <style>
+        /* CSS برای گرافیک بالا، حالت روز و شب */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            color: #333;
+            transition: background 0.5s, color 0.5s;
+            overflow-x: hidden;
         }
-      `}</style>
+        body.dark-mode {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: #f1f1f1;
+        }
+        header {
+            text-align: center;
+            padding: 50px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+        }
+        header h1 {
+            font-size: 3em;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .hearts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .heart {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: red;
+            transform: rotate(45deg);
+            animation: float 5s linear infinite;
+        }
+        .heart:before, .heart:after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: red;
+            border-radius: 50%;
+        }
+        .heart:before { top: -10px; left: 0; }
+        .heart:after { left: -10px; top: 0; }
+        @keyframes float {
+            0% { transform: translateY(0) rotate(45deg); opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(45deg); opacity: 0; }
+        }
+        #counter {
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        #love-quote {
+            font-style: italic;
+            font-size: 1.5em;
+            margin: 20px;
+            text-align: center;
+            animation: fadeInOut 10s infinite;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        section {
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #upload-form {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        body.dark-mode #upload-form {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #ff69b4;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #ff1493;
+        }
+        #gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .gallery-item {
+            position: relative;
+        }
+        .gallery-item img, .gallery-item video {
+            width: 100%;
+            border-radius: 10px;
+        }
+        .gallery-item audio {
+            width: 100%;
+        }
+        .gallery-item p {
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        #gallery-lock {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        #gallery-lock input {
+            width: 200px;
+            margin-bottom: 10px;
+        }
+        #mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #fff;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        body.dark-mode #mode-toggle {
+            background: #333;
+            color: #fff;
+        }
+        /* موسیقی پس‌زمینه */
+        #bg-music {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>عشق ما 💕</h1>
+        <div id="counter">زمان رابطه: محاسبه می‌شود...</div>
+        <div id="love-quote">متن عاشقانه...</div>
+        <div class="hearts"></div>
+    </header>
+
+    <section id="upload-section">
+        <h2>بارگذاری محتوا با پارتنر</h2>
+        <form id="upload-form">
+            <input type="file" id="file-input" accept="image/*,video/*,audio/*,text/plain" multiple>
+            <input type="text" id="text-input" placeholder="متن عاشقانه بنویسید...">
+            <button type="button" id="upload-btn">بارگذاری</button>
+        </form>
+    </section>
+
+    <section id="gallery-section">
+        <h2>گالری (با قفل)</h2>
+        <button id="view-gallery-btn">مشاهده گالری</button>
+        <div id="gallery"></div>
+    </section>
+
+    <div id="gallery-lock">
+        <h2>رمز عبور برای گالری</h2>
+        <input type="password" id="password-input" placeholder="رمز عبور">
+        <button id="unlock-btn">باز کردن</button>
     </div>
-  );
-}
 
-function mkHeart() {
-  const chars = ["💖", "💗", "💘", "💝", "💞", "💕", "❤️", "🩷"];
-  return {
-    id: crypto.randomUUID(),
-    char: chars[Math.floor(Math.random() * chars.length)],
-    left: Math.floor(Math.random() * 100) + "%",
-    bottom: "-10vh",
-    size: Math.floor(Math.random() * 24 + 16) + "px",
-    duration: Math.floor(Math.random() * 5000 + 8000),
-  };
-}
+    <button id="mode-toggle">🌙</button>
 
-// ——————————————— توابع کمکی فایل ———————————————
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+    <audio id="bg-music" loop>
+        <source src="https://example.com/romantic-music.mp3" type="audio/mpeg"> <!-- جایگزین با لینک واقعی موسیقی عاشقانه -->
+    </audio>
+
+    <script>
+        // JavaScript برای ویژگی‌ها
+
+        // حالت روز و شب
+        const body = document.body;
+        const modeToggle = document.getElementById('mode-toggle');
+        let isDarkMode = false;
+        modeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            body.classList.toggle('dark-mode', isDarkMode);
+            modeToggle.textContent = isDarkMode ? '☀️' : '🌙';
+        });
+
+        // انیمیشن قلب‌ها برای گرافیک بالا
+        function createHeart() {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            heart.style.left = Math.random() * 100 + 'vw';
+            heart.style.animationDuration = Math.random() * 3 + 2 + 's';
+            document.querySelector('.hearts').appendChild(heart);
+            setTimeout(() => heart.remove(), 5000);
+        }
+        setInterval(createHeart, 300);
+
+        // شمارشگر زمان رابطه
+        let relDate = new Date('2023-01-01'); // تاریخ شروع رابطه - می‌توانید تغییر دهید یا ورودی بگیرید
+        function updateCounter() {
+            const now = new Date();
+            const diff = now - relDate;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            document.getElementById('counter').textContent = `زمان رابطه: ${days} روز، ${hours} ساعت، ${minutes} دقیقه، ${seconds} ثانیه`;
+        }
+        setInterval(updateCounter, 1000);
+        updateCounter();
+
+        // متن عاشقانه که هر 10 ثانیه تغییر می‌کند
+        const quotes = [
+            "عشق تو بهترین چیز زندگی‌مه 💖",
+            "هر لحظه با تو بودن مثل رویاست 🌹",
+            "تو نور زندگی منی ✨",
+            "دوستت دارم بیشتر از ستاره‌ها ⭐",
+            "با تو، دنیا زیباتره 🌍",
+            "عشق ما ابدیه ❤️",
+            "تو بهترین پارتنر دنیایی 😍"
+        ];
+        let quoteIndex = 0;
+        function updateQuote() {
+            document.getElementById('love-quote').textContent = quotes[quoteIndex];
+            quoteIndex = (quoteIndex + 1) % quotes.length;
+        }
+        setInterval(updateQuote, 10000);
+        updateQuote();
+
+        // بارگذاری محتوا و ذخیره در localStorage
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInput = document.getElementById('file-input');
+        const textInput = document.getElementById('text-input');
+        let galleryItems = JSON.parse(localStorage.getItem('gallery')) || [];
+
+        uploadBtn.addEventListener('click', () => {
+            const text = textInput.value;
+            if (text) {
+                galleryItems.push({ type: 'text', content: text });
+            }
+            Array.from(fileInput.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    galleryItems.push({ type: file.type.split('/')[0], content: e.target.result });
+                    localStorage.setItem('gallery', JSON.stringify(galleryItems));
+                };
+                reader.readAsDataURL(file);
+            });
+            textInput.value = '';
+            fileInput.value = '';
+            alert('بارگذاری شد!');
+        });
+
+        // گالری با قفل (رمز پیش‌فرض: love)
+        const password = 'love'; // رمز عبور - می‌توانید تغییر دهید
+        const viewGalleryBtn = document.getElementById('view-gallery-btn');
+        const galleryLock = document.getElementById('gallery-lock');
+        const passwordInput = document.getElementById('password-input');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const gallery = document.getElementById('gallery');
+
+        viewGalleryBtn.addEventListener('click', () => {
+            galleryLock.style.display = 'flex';
+        });
+
+        unlockBtn.addEventListener('click', () => {
+            if (passwordInput.value === password) {
+                galleryLock.style.display = 'none';
+                renderGallery();
+            } else {
+                alert('رمز اشتباه است!');
+            }
+            passwordInput.value = '';
+        });
+
+        function renderGallery() {
+            gallery.innerHTML = '';
+            galleryItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                if (item.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = item.content;
+                    div.appendChild(img);
+                } else if (item.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = item.content;
+                    video.controls = true;
+                    div.appendChild(video);
+                } else if (item.type === 'audio') {
+                    const audio = document.createElement('audio');
+                    audio.src = item.content;
+                    audio.controls = true;
+                    div.appendChild(audio);
+                } else if (item.type === 'text') {
+                    const p = document.createElement('p');
+                    p.textContent = item.content;
+                    div.appendChild(p);
+                }
+                gallery.appendChild(div);
+            });
+        }
+
+        // موسیقی پس‌زمینه (اختیاری - پخش خودکار)
+        const bgMusic = document.getElementById('bg-music');
+        // bgMusic.play(); // اگر بخواهید خودکار پخش شود (برخی مرورگرها بلاک می‌کنند)
+
+        // ویژگی اضافی: ورودی برای تاریخ رابطه
+        const relDateInput = prompt('تاریخ شروع رابطه را وارد کنید (YYYY-MM-DD):');
+        if (relDateInput) relDate = new Date(relDateInput);
+
+        // ویژگی اضافی: چت ساده با پارتنر (mock - ذخیره در local)
+        // می‌توانید بخش چت اضافه کنید اگر بخواهید
+    </script>
+</body>
+</html>
